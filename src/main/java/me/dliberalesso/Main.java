@@ -36,7 +36,7 @@ public class Main {
                 .build()
         );
 
-        // Faz o parsing da linha de comando
+        // faz o parsing da linha de comando
         CommandLineParser parser = new DefaultParser();
         CommandLine line;
         try {
@@ -85,9 +85,10 @@ public class Main {
 
         // valida MODO
         try {
-            if (line.getOptionValue("m").equals("G")) {
+            String modo = line.getOptionValue("m");
+            if (modo.equals("G")) {
                 Gerenciador.start();
-            } else if (line.getOptionValue("m").equals("H")) {
+            } else if (modo.equals("H")) {
                 System.out.println("Ainda não temos um HOST");
             } else {
                 throw new Exception();
