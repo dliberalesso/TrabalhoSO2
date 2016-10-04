@@ -38,7 +38,7 @@ public class Main {
 
         try {
             CommandLine line = parser.parse(options, args);
-            System.out.println(line);
+            System.out.println(line.getOptionValue("m"));
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             HelpFormatter formatter = new HelpFormatter();
