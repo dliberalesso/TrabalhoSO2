@@ -1,3 +1,4 @@
+//TODO Refatorar e transformar em um objeto, abandonando a função estática START()
 package me.dliberalesso;
 
 import java.util.*;
@@ -9,7 +10,7 @@ public class Gerenciador {
     private static ArrayBlockingQueue<Processo> fila = new ArrayBlockingQueue<>(100);
     private static int pid_processo = 1;
 
-    public static void main(String[] args) {
+    public static void start() {
         new Thread(new Runnable() {
             @Override
             public void run() {
