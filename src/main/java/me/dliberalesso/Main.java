@@ -75,7 +75,8 @@ public class Main {
             if (line.hasOption("ip")) {
                 endereco = InetAddress.getByName(line.getOptionValue("ip"));
             } else {
-                endereco = InetAddress.getLocalHost();
+                // endereco = InetAddress.getLocalHost(); // retorna IP externo?
+                endereco = InetAddress.getByName("localhost"); // retorna IP interno?
             }
         } catch (UnknownHostException e) {
             System.out.println("Certifique-se de que o ENDEREÇO IP informado esteja correto!");
