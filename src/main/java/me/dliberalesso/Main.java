@@ -6,9 +6,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 public class Main {
+    private static Options options = new Options();
+
     public static void main(String[] args) {
         // define opções
-        Options options = new Options();
         options.addOption(Option.builder("m")
                 .desc("inicia no modo (G)erenciador de processos ou "
                         + "inicia no modo (H)host e simula core(s) da CPU")
@@ -36,14 +37,14 @@ public class Main {
                 .build()
         );
 
+        // TODO ver uma forma alternativa a esse monte de try/catch
         // faz o parsing da linha de comando
         CommandLineParser parser = new DefaultParser();
         CommandLine line;
         try {
             line = parser.parse(options, args);
         } catch (ParseException e) {
-            System.out.println(e.getMessage());
-            new HelpFormatter().printHelp("TrabalhoSO2", options, true);
+            ajuda(e.getMessage());
             return;
         }
 
@@ -53,8 +54,7 @@ public class Main {
             if (line.hasOption("c")) cores_conexoes = Integer.parseInt(line.getOptionValue("c"));
             if (cores_conexoes <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
-            System.out.println("Valor informado deve ser um inteiro maior que 0!");
-            new HelpFormatter().printHelp("TrabalhoSO2", options, true);
+            ajuda("Valor informado deve ser um inteiro maior que 0!");
             return;
         }
 
@@ -64,8 +64,7 @@ public class Main {
             if (line.hasOption("p")) porta = Integer.parseInt(line.getOptionValue("p"));
             if (porta < 1024 || porta > 65535) throw new NumberFormatException();
         } catch (NumberFormatException e) {
-            System.out.println("PORTA deve ser um inteiro entre 1024...65535!");
-            new HelpFormatter().printHelp("TrabalhoSO2", options, true);
+            ajuda("PORTA deve ser um inteiro entre 1024...65535!");
             return;
         }
 
@@ -79,8 +78,7 @@ public class Main {
                 endereco = InetAddress.getByName("localhost"); // retorna IP interno?
             }
         } catch (UnknownHostException e) {
-            System.out.println("Certifique-se de que o ENDEREÇO IP informado esteja correto!");
-            new HelpFormatter().printHelp("TrabalhoSO2", options, true);
+            ajuda("Certifique-se de que o ENDEREÇO IP informado esteja correto!");
             return;
         }
 
@@ -95,8 +93,13 @@ public class Main {
                 throw new Exception();
             }
         } catch (Exception e) {
-            System.out.println("Modo deve ser 'G' ou 'H'!");
-            new HelpFormatter().printHelp("TrabalhoSO2", options, true);
+            ajuda("Modo deve ser 'G' ou 'H'!");
         }
+    }
+
+    private static void ajuda(String mensagem) {
+        System.out.println(mensagem + "\n");
+        new HelpFormatter().printHelp("TrabalhoSO2", "", options,
+                "\nAlunos: Douglas Liberalesso, Rafahel Mello, Tayrone Rockenbach.", true);
     }
 }
