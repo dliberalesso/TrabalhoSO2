@@ -2,10 +2,11 @@ package me.dliberalesso;
 
 import org.apache.commons.cli.*;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class Main {
+public class TrabalhoSO2 {
     private static Options options = new Options();
 
     public static void main(String[] args) {
@@ -49,10 +50,10 @@ public class Main {
         }
 
         // valida quantidade de CORES/CONEXOES
-        int cores_conexoes = 4;
+        int poolSize = 4;
         try {
-            if (line.hasOption("c")) cores_conexoes = Integer.parseInt(line.getOptionValue("c"));
-            if (cores_conexoes <= 0) throw new NumberFormatException();
+            if (line.hasOption("c")) poolSize = Integer.parseInt(line.getOptionValue("c"));
+            if (poolSize <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
             ajuda("Valor informado deve ser um inteiro maior que 0!");
             return;
@@ -86,12 +87,14 @@ public class Main {
         try {
             String modo = line.getOptionValue("m");
             if (modo.equals("G")) {
-                Gerenciador.start();
+                new Gerenciador(porta, poolSize).run();
             } else if (modo.equals("H")) {
-                System.out.println("Ainda não temos um HOST");
+                new Host(endereco, porta, poolSize).run();
             } else {
                 throw new Exception();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         } catch (Exception e) {
             ajuda("Modo deve ser 'G' ou 'H'!");
         }

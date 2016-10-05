@@ -1,9 +1,10 @@
 package me.dliberalesso;
 
+import java.io.Serializable;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-public class Processo {
+public class Processo implements Serializable {
     public static final String APTO = "Apto";
     public static final String EXEC = "Executando";
 
@@ -24,6 +25,10 @@ public class Processo {
 
     public int getPid() {
         return pid;
+    }
+
+    public String getNome() {
+        return nome;
     }
 
     public int getTempo() {
@@ -48,10 +53,9 @@ public class Processo {
 
     @Override
     public String toString() {
-        String str = String.format(
+        return String.format(
                 " %3d | %4s | %7s | %8s | %8s | %10s | %4s",
                 pid, nome, tamanho, criacao, execucao, estado, host
         );
-        return str;
     }
 }

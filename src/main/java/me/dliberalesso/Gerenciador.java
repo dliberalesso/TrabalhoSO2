@@ -1,47 +1,45 @@
-//TODO Refatorar e transformar em um objeto, abandonando a função estática START()
 package me.dliberalesso;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-public class Gerenciador {
-    private static final String CABECALHO = " PID | NOME | TAMANHO |  CRIACAO | EXECUCAO |   STATUS   | HOST";
-    private static List<Processo> executando = Collections.synchronizedList(new ArrayList<Processo>());
-    private static ArrayBlockingQueue<Processo> fila = new ArrayBlockingQueue<>(100);
-    private static int pid_processo = 1;
+public class Gerenciador implements Runnable{
+    private ServerSocket serverSocket;
+    private ExecutorService pool;
+    private int poolSize;
 
-    public static void start() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                entradas();
-            }
-        }).start();
+    private String CABECALHO = " PID | NOME | TAMANHO |  CRIACAO | EXECUCAO |   STATUS   | HOST";
+    private List<Processo> executando = Collections.synchronizedList(new ArrayList<Processo>());
+    private ArrayBlockingQueue<Processo> fila = new ArrayBlockingQueue<>(100);
+    private int pid = 1;
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    worker(0);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    worker(1);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+    public Gerenciador(int porta, int poolSize) throws IOException {
+        this.serverSocket = new ServerSocket(porta);
+        this.pool = Executors.newFixedThreadPool(poolSize);
+        this.poolSize = poolSize;
     }
 
-    private static void entradas() {
+    @Override
+    public void run() {
+        try {
+            for (int i = 1; i <= poolSize; i++) {
+                pool.execute(new ServerHandler(serverSocket.accept(), executando, fila, i));
+            }
+            entradas();
+        } catch (IOException e) {
+            pool.shutdown();
+        }
+    }
+
+    private void entradas() {
         Scanner scanner = new Scanner(System.in);
 
         while (true) {
@@ -55,9 +53,7 @@ public class Gerenciador {
             } else if (comando.equals("now")) {
                 System.out.println(Processo.agora());
             } else if (comando.equals("exit")) {
-                fila.clear();
-                fila.add(new Processo(9999, "", 0, ""));
-                fila.add(new Processo(9999, "", 0, ""));
+                exit();
                 break;
             } else {
                 System.out.println("Comando invalido!");
@@ -65,19 +61,7 @@ public class Gerenciador {
         }
     }
 
-    private static void create(StringTokenizer st) {
-        if (st.countTokens() != 3) {
-            System.out.println("Comando invalido!");
-        } else {
-            String nome = st.nextToken();
-            int tempo = Integer.parseInt(st.nextToken());
-            String tamanho = st.nextToken() + "Kb";
-            Processo processo = new Processo(pid_processo++, nome, tempo, tamanho);
-            fila.add(processo);
-        }
-    }
-
-    private static void ps() {
+    private void ps() {
         System.out.println(CABECALHO);
         for (Processo p: executando) {
             System.out.println(p);
@@ -87,19 +71,103 @@ public class Gerenciador {
         }
     }
 
-    private static void worker(int pid) throws InterruptedException {
-        while (true) {
-            Processo p = fila.take();
-            if (p.getPid() == 9999) {
-                break;
-            } else {
-                p.setEstado(Processo.EXEC);
-                p.setHost(String.valueOf(pid));
-                p.setExecucao(Processo.agora());
-                executando.add(p);
-                Thread.sleep(p.getTempo() * 1000);
-                executando.remove(p);
+    private void create(StringTokenizer st) {
+        if (st.countTokens() != 3) {
+            System.out.println("Comando invalido!");
+        } else {
+            String nome = st.nextToken();
+            int tempo = Integer.parseInt(st.nextToken());
+            String tamanho = st.nextToken() + "Kb";
+            Processo processo = new Processo(pid++, nome, tempo, tamanho);
+            fila.add(processo);
+        }
+    }
+
+    private void exit() {
+        pool.shutdown(); // Evita que novas tarefas sejam escalonadas
+        fila.clear();
+        ps();
+        try {
+            // Aguarda 1 segundo para que tarefas terminem
+            if (!pool.awaitTermination(1, TimeUnit.SECONDS)) {
+                pool.shutdownNow(); // Cancela tarefas que ainda nao terminaram
+
+                // Aguarda mais 15 segundos para que tarefas respondam ao sinal de terminar
+                System.err.println("Aguardando a execução dos processos escalonados.");
             }
+        } catch (InterruptedException ie) {
+            pool.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+
+class ServerHandler implements Runnable {
+    private Socket socket;
+    private List<Processo> executando;
+    private ArrayBlockingQueue<Processo> fila;
+    private int hostID;
+
+    private ObjectOutputStream outputStream;
+    private ObjectInputStream inputStream;
+
+    ServerHandler(Socket socket, List<Processo> executando, ArrayBlockingQueue<Processo> fila, int hostID) {
+        this.socket = socket;
+        this.executando = executando;
+        this.fila = fila;
+        this.hostID = hostID;
+
+        try {
+            this.outputStream = new ObjectOutputStream(socket.getOutputStream());
+            this.inputStream = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            // envia o ID do host e aguarda uma confirmação
+            outputStream.writeInt(hostID);
+            outputStream.flush();
+
+            // se o ID estiver correto, inicia a conversa
+            if (inputStream.readInt() == hostID) {
+                System.out.println("Host " + hostID + " conectado.");
+                while (!Thread.interrupted()) {
+                    Processo processo = fila.take();
+                    processo.setEstado(Processo.EXEC);
+                    processo.setHost(String.valueOf(hostID));
+                    processo.setExecucao(Processo.agora());
+                    executando.add(processo);
+
+                    // envia processo para o host
+                    outputStream.writeObject(processo);
+                    outputStream.flush();
+
+                    // aguarda o fim da execucao no host
+                    if (inputStream.readBoolean()) {
+                        System.out.println("[" + processo.getPid() + "] - " +
+                                processo.getNome() + " executado com sucesso.");
+                        executando.remove(processo);
+                    }
+                }
+                socket.close();
+            } else {
+                socket.close();
+                throw new Exception("Não foi possível estabelecer handshake.");
+            }
+        } catch (InterruptedException e) {
+            try {
+                socket.close();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+            System.out.println("Conexão com o host " + hostID + " encerrada.");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 }
