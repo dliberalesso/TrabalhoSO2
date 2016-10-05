@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class TrabalhoSO2 {
+public class Simulador {
     private static Options options = new Options();
 
     public static void main(String[] args) {
@@ -102,7 +102,7 @@ public class TrabalhoSO2 {
 
     private static void ajuda(String mensagem) {
         System.out.println(mensagem + "\n");
-        new HelpFormatter().printHelp("TrabalhoSO2", "", options,
+        new HelpFormatter().printHelp("Simulador", "", options,
                 "\nAlunos: Douglas Liberalesso, Rafahel Mello, Tayrone Rockenbach.", true);
     }
 }
