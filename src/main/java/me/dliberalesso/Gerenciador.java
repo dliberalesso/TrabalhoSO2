@@ -1,5 +1,8 @@
 package me.dliberalesso;
 
+import java.io.PrintWriter;
+import java.io.FileWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -23,11 +26,13 @@ public class Gerenciador implements Runnable{
     private int physicalPages = 16;
     private int virtualPages = 32;
     private static final int pageSize = 8;
+    private String exitTxt;
 
     public Gerenciador(int porta, int poolSize) throws IOException {
         this.serverSocket = new ServerSocket(porta);
         this.pool = Executors.newFixedThreadPool(poolSize);
         this.poolSize = poolSize;
+        exitTxt = CABECALHO + "%n";
     }
 
     @Override
@@ -86,13 +91,14 @@ public class Gerenciador implements Runnable{
             String tamanho = st.nextToken() + "Kb";
             Processo processo = new Processo(pid++, nome, tempo, tamanho);
             fila.add(processo);
+            exitTxt += processo.toString() + "%n";
         }
     }
 
     private void exit() {
         pool.shutdown(); // Evita que novas tarefas sejam escalonadas
         fila.clear();
-        ps();
+        //ps();
         try {
             // Aguarda 1 segundo para que tarefas terminem
             if (!pool.awaitTermination(1, TimeUnit.SECONDS)) {
@@ -101,9 +107,17 @@ public class Gerenciador implements Runnable{
                 // Aguarda mais 15 segundos para que tarefas respondam ao sinal de terminar
                 System.err.println("Aguardando a execução dos processos escalonados.");
             }
+            FileWriter arquivo = new FileWriter(new File("resumo_execucao.txt"));
+            PrintWriter printer = new PrintWriter(arquivo);
+            printer.printf(exitTxt);
+            arquivo.close();
         } catch (InterruptedException ie) {
             pool.shutdownNow();
             Thread.currentThread().interrupt();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
