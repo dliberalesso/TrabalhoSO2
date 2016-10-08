@@ -1,11 +1,6 @@
 package me.dliberalesso;
 
-import java.io.PrintWriter;
-import java.io.FileWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
@@ -91,6 +86,8 @@ public class Gerenciador implements Runnable{
             String tamanho = st.nextToken() + "Kb";
             Processo processo = new Processo(pid++, nome, tempo, tamanho);
             fila.add(processo);
+
+            //TODO A thread deve fazer isso
             exitTxt += processo.toString() + "%n";
         }
     }
@@ -98,7 +95,6 @@ public class Gerenciador implements Runnable{
     private void exit() {
         pool.shutdown(); // Evita que novas tarefas sejam escalonadas
         fila.clear();
-        //ps();
         try {
             // Aguarda 1 segundo para que tarefas terminem
             if (!pool.awaitTermination(1, TimeUnit.SECONDS)) {

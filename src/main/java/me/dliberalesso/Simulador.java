@@ -87,7 +87,8 @@ public class Simulador {
         try {
             String modo = line.getOptionValue("m");
             if (modo.equals("G")) {
-                new Gerenciador(porta, poolSize).run();
+                new Thread(new Gerenciador(porta, poolSize)).start();
+                Thread.currentThread().interrupt();
             } else if (modo.equals("H")) {
                 new Host(endereco, porta, poolSize).run();
             } else {
