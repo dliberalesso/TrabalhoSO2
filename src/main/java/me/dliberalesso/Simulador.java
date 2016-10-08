@@ -95,7 +95,7 @@ public class Simulador {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
-            ajuda("Modo deve ser 'G' ou 'H'!");
+            ajuda("Modo deve ser 'G' ou 'H'");
         }
     }
 
