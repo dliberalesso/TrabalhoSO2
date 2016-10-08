@@ -118,16 +118,10 @@ public class Gerenciador implements Runnable{
     }
     
     private void mem(StringTokenizer st) {
-        if (st.countTokens() > 1) {
-            System.out.println("Comando invalido!");
-        } else if (st.nextToken().isEmpty()) {
+       if (!st.hasMoreTokens()) {
             System.out.println("Tamanho em Bytes:\n"
                     + "Memória Física = " + pageSize * physicalPages + " B\n"
                     + "Memória Virtual = " + pageSize * virtualPages + " B\n");
-        } else if (st.nextToken().equals("f")) {
-            //code here
-        } else if (st.nextToken().equals("v")) {
-            //code here
         } else {
             System.out.println("Comando invalido!");
         }

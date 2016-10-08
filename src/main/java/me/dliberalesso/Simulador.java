@@ -38,7 +38,6 @@ public class Simulador {
                 .build()
         );
 
-        // TODO ver uma forma alternativa a esse monte de try/catch
         // faz o parsing da linha de comando
         CommandLineParser parser = new DefaultParser();
         CommandLine line;
@@ -87,8 +86,7 @@ public class Simulador {
         try {
             String modo = line.getOptionValue("m");
             if (modo.equals("G")) {
-                new Thread(new Gerenciador(porta, poolSize)).start();
-                Thread.currentThread().interrupt();
+                new Gerenciador(porta, poolSize).run();
             } else if (modo.equals("H")) {
                 new Host(endereco, porta, poolSize).run();
             } else {
