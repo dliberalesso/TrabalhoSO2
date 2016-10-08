@@ -1,6 +1,11 @@
 package me.dliberalesso;
 
-import java.io.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
@@ -9,25 +14,35 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static me.dliberalesso.Gerenciador.logger;
+
 public class Gerenciador implements Runnable{
     private ServerSocket serverSocket;
     private ExecutorService pool;
     private int poolSize;
 
+    // Fila + Processos
     private String CABECALHO = " PID | NOME | TAMANHO |  CRIACAO | EXECUCAO |   STATUS   | HOST";
     private List<Processo> executando = Collections.synchronizedList(new ArrayList<Processo>());
     private ArrayBlockingQueue<Processo> fila = new ArrayBlockingQueue<>(100);
     private int pid = 1;
+
+    // Memoria
     private int physicalPages = 16;
     private int virtualPages = 32;
     private static final int pageSize = 8;
-    private String exitTxt;
+
+    // Logger
+    public static final Logger logger = LogManager.getLogger(Gerenciador.class);
 
     public Gerenciador(int porta, int poolSize) throws IOException {
         this.serverSocket = new ServerSocket(porta);
         this.pool = Executors.newFixedThreadPool(poolSize);
         this.poolSize = poolSize;
-        exitTxt = CABECALHO + "%n";
+
+        // Cabecalho do log é um pouco diferente do PS
+        logger.trace("Processos listados na ordem em que finalizados.\n");
+        logger.trace(" PID | NOME | TAMANHO |  CRIACAO | EXECUCAO | HOST |   FIM");
     }
 
     @Override
@@ -86,9 +101,6 @@ public class Gerenciador implements Runnable{
             String tamanho = st.nextToken() + "Kb";
             Processo processo = new Processo(pid++, nome, tempo, tamanho);
             fila.add(processo);
-
-            //TODO A thread deve fazer isso
-            exitTxt += processo.toString() + "%n";
         }
     }
 
@@ -98,30 +110,34 @@ public class Gerenciador implements Runnable{
         try {
             // Aguarda 1 segundo para que tarefas terminem
             if (!pool.awaitTermination(1, TimeUnit.SECONDS)) {
-                pool.shutdownNow(); // Cancela tarefas que ainda nao terminaram
-
-                // Aguarda mais 15 segundos para que tarefas respondam ao sinal de terminar
-                System.err.println("Aguardando a execução dos processos escalonados.");
+                pool.shutdownNow(); // Tenta cancelar tarefas que ainda nao terminaram
             }
-            FileWriter arquivo = new FileWriter(new File("resumo_execucao.txt"));
-            PrintWriter printer = new PrintWriter(arquivo);
-            printer.printf(exitTxt);
-            arquivo.close();
         } catch (InterruptedException ie) {
             pool.shutdownNow();
             Thread.currentThread().interrupt();
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
     
     private void mem(StringTokenizer st) {
-       if (!st.hasMoreTokens()) {
+        if (!st.hasMoreTokens()) {
             System.out.println("Tamanho em Bytes:\n"
                     + "Memória Física = " + pageSize * physicalPages + " B\n"
-                    + "Memória Virtual = " + pageSize * virtualPages + " B\n");
+                    + "Memória Virtual = " + pageSize * virtualPages + " B");
+        } else if (st.countTokens() == 1) {
+            String str = st.nextToken();
+
+            switch (str) {
+                case ("f"):
+                    System.out.println("Memória Física = " + pageSize * physicalPages + "B");
+                    break;
+                case ("v"):
+                    System.out.println("Memória Virtual = " + pageSize * virtualPages + " B");
+                    break;
+                default:
+                    System.out.println("Comando invalido!");
+            }
         } else {
             System.out.println("Comando invalido!");
         }
@@ -177,6 +193,9 @@ class ServerHandler implements Runnable {
                         System.out.println("[" + processo.getPid() + "] - " +
                                 processo.getNome() + " executado com sucesso.");
                         executando.remove(processo);
+
+                        // Escreve processo no log
+                        logger.trace(processo.toLog() + " | " + Processo.agora());
                     }
                 }
                 socket.close();

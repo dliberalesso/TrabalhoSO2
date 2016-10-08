@@ -58,4 +58,11 @@ public class Processo implements Serializable {
                 pid, nome, tamanho, criacao, execucao, estado, host
         );
     }
+
+    public String toLog() {
+        return String.format(
+                " %3d | %4s | %7s | %8s | %8s | %4s",
+                pid, nome, tamanho, criacao, execucao, host
+        );
+    }
 }
