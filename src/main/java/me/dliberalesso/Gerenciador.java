@@ -20,6 +20,9 @@ public class Gerenciador implements Runnable{
     private List<Processo> executando = Collections.synchronizedList(new ArrayList<Processo>());
     private ArrayBlockingQueue<Processo> fila = new ArrayBlockingQueue<>(100);
     private int pid = 1;
+    private int physicalPages = 16;
+    private int virtualPages = 32;
+    private static final int pageSize = 8;
 
     public Gerenciador(int porta, int poolSize) throws IOException {
         this.serverSocket = new ServerSocket(porta);
@@ -55,7 +58,10 @@ public class Gerenciador implements Runnable{
             } else if (comando.equals("exit")) {
                 exit();
                 break;
-            } else {
+            } else if (comando.equals("mem")) {
+                mem(st);
+            }
+            else {
                 System.out.println("Comando invalido!");
             }
         }
@@ -98,6 +104,22 @@ public class Gerenciador implements Runnable{
         } catch (InterruptedException ie) {
             pool.shutdownNow();
             Thread.currentThread().interrupt();
+        }
+    }
+    
+    private void mem(StringTokenizer st) {
+        if (st.countTokens() > 1) {
+            System.out.println("Comando invalido!");
+        } else if (st.nextToken().isEmpty()) {
+            System.out.println("Tamanho em Bytes:\n"
+                    + "Memória Física = " + pageSize * physicalPages + " B\n"
+                    + "Memória Virtual = " + pageSize * virtualPages + " B\n");
+        } else if (st.nextToken().equals("f")) {
+            //code here
+        } else if (st.nextToken().equals("v")) {
+            //code here
+        } else {
+            System.out.println("Comando invalido!");
         }
     }
 }

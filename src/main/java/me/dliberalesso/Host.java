@@ -55,7 +55,8 @@ class HostHandler implements Runnable {
                 System.out.println("Conectado como host " + hostID + ".");
                 while (!Thread.interrupted()) {
                     Processo processo = (Processo)inputStream.readObject();
-                    System.out.println("Host " + hostID + " execuntado processo [" + processo.getPid() + "] - " + processo.getNome() + ".");
+                    System.out.println("Host " + hostID + " execuntado processo [" + 
+                            processo.getPid() + "] - " + processo.getNome() + ".");
                     Thread.sleep(processo.getTempo() * 1000);
                     outputStream.writeBoolean(true);
                     outputStream.flush();
