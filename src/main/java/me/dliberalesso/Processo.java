@@ -8,15 +8,15 @@ public class Processo implements Serializable {
     public static final String APTO = "Apto";
     public static final String EXEC = "Executando";
 
-    private int pid, tempo;
+    private int pid, tempo, resto;
     private String nome, tamanho, criacao, execucao, estado, host;
 
     public Processo(int pid, String nome, int tempo, String tamanho) {
         this.pid = pid;
         this.nome = nome;
         this.tempo = tempo;
+        this.resto = tempo;
         this.tamanho = tamanho;
-
         this.criacao = agora();
         this.execucao = null;
         this.estado = APTO;
@@ -33,6 +33,14 @@ public class Processo implements Serializable {
 
     public int getTempo() {
         return tempo;
+    }
+
+    public int getResto() {
+        return resto;
+    }
+
+    public void setResto(int resto) {
+        this.resto = resto;
     }
 
     public void setExecucao(String execucao) {

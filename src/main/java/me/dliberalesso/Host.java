@@ -33,6 +33,7 @@ class HostHandler implements Runnable {
     private Socket socket;
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
+    private int quantum;
     private int hostID;
 
     public HostHandler(InetAddress hostname, int porta) throws IOException {
@@ -50,6 +51,8 @@ class HostHandler implements Runnable {
             outputStream.writeInt(hostID);
             outputStream.flush();
 
+            this.quantum = inputStream.readInt();
+
             // verifica se a conexao ainda esta ativa
             if (!socket.isClosed()) {
                 System.out.println("Conectado como host " + hostID + ".");
@@ -57,7 +60,13 @@ class HostHandler implements Runnable {
                     Processo processo = (Processo)inputStream.readObject();
                     System.out.println("Host " + hostID + " execuntado processo [" + 
                             processo.getPid() + "] - " + processo.getNome() + ".");
-                    Thread.sleep(processo.getTempo() * 1000);
+
+                    if (quantum < processo.getResto()) {
+                        Thread.sleep(quantum * 1000);
+                    } else {
+                        Thread.sleep(processo.getResto() * 1000);
+                    }
+
                     outputStream.writeBoolean(true);
                     outputStream.flush();
                     System.out.println("[" + processo.getPid() + "] - " +

@@ -9,10 +9,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static me.dliberalesso.Gerenciador.logger;
 
@@ -32,6 +29,9 @@ public class Gerenciador implements Runnable{
     private int virtualPages = 32;
     private static final int pageSize = 8;
 
+    // Quantum
+    private int quantum = ThreadLocalRandom.current().nextInt(5, 11);
+
     // Logger
     public static final Logger logger = LogManager.getLogger(Gerenciador.class);
 
@@ -47,9 +47,10 @@ public class Gerenciador implements Runnable{
 
     @Override
     public void run() {
+        System.out.println("O quantum é de " + quantum + " segundos.");
         try {
             for (int i = 1; i <= poolSize; i++) {
-                pool.execute(new ServerHandler(serverSocket.accept(), executando, fila, i));
+                pool.execute(new ServerHandler(serverSocket.accept(), executando, fila, quantum, i));
             }
             entradas();
         } catch (IOException e) {
@@ -148,15 +149,18 @@ class ServerHandler implements Runnable {
     private Socket socket;
     private List<Processo> executando;
     private ArrayBlockingQueue<Processo> fila;
+    private int quantum;
     private int hostID;
 
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
 
-    ServerHandler(Socket socket, List<Processo> executando, ArrayBlockingQueue<Processo> fila, int hostID) {
+    ServerHandler(Socket socket, List<Processo> executando, ArrayBlockingQueue<Processo> fila, int quantum, int
+            hostID) {
         this.socket = socket;
         this.executando = executando;
         this.fila = fila;
+        this.quantum = quantum;
         this.hostID = hostID;
 
         try {
@@ -177,6 +181,9 @@ class ServerHandler implements Runnable {
             // se o ID estiver correto, inicia a conversa
             if (inputStream.readInt() == hostID) {
                 System.out.println("Host " + hostID + " conectado.");
+                outputStream.writeInt(quantum);
+                outputStream.flush();
+
                 while (!Thread.interrupted()) {
                     Processo processo = fila.take();
                     processo.setEstado(Processo.EXEC);
@@ -190,9 +197,19 @@ class ServerHandler implements Runnable {
 
                     // aguarda o fim da execucao no host
                     if (inputStream.readBoolean()) {
-                        System.out.println("[" + processo.getPid() + "] - " +
-                                processo.getNome() + " executado com sucesso.");
+
                         executando.remove(processo);
+
+                        if (quantum < processo.getResto()) {
+                            processo.setResto(processo.getResto() - quantum);
+                            fila.add(processo);
+                            System.out.println("[" + processo.getPid() + "] - " +
+                                    processo.getNome() + " retorna para a fila.");
+                        } else {
+                            processo.setResto(0);
+                            System.out.println("[" + processo.getPid() + "] - " +
+                                    processo.getNome() + " executado com sucesso.");
+                        }
 
                         // Escreve processo no log
                         logger.trace(processo.toLog() + " | " + Processo.agora());
