@@ -3,19 +3,23 @@ package me.dliberalesso;
 import java.io.Serializable;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 public class Processo implements Serializable {
     public static final String APTO = "Apto";
     public static final String EXEC = "Executando";
+    public static final String FIM = "Finalizado";
 
-    private int pid, tempo, resto;
-    private String nome, tamanho, criacao, execucao, estado, host;
+    private int pid, tempo, resto, retorno, tamanho;
+    private String nome, criacao, execucao, estado, host;
+    private ArrayList<Integer> memoria = new ArrayList<Integer>();
 
-    public Processo(int pid, String nome, int tempo, String tamanho) {
+    public Processo(int pid, String nome, int tempo, int tamanho) {
         this.pid = pid;
         this.nome = nome;
         this.tempo = tempo;
         this.resto = tempo;
+        this.retorno = 2;
         this.tamanho = tamanho;
         this.criacao = agora();
         this.execucao = null;
@@ -35,12 +39,28 @@ public class Processo implements Serializable {
         return tempo;
     }
 
+    public int getTamanho() {
+        return tamanho;
+    }
+
     public int getResto() {
         return resto;
     }
 
+    public int getRetorno() {
+        return retorno;
+    }
+
+    public ArrayList<Integer> getMemoria() {
+        return memoria;
+    }
+
     public void setResto(int resto) {
         this.resto = resto;
+    }
+
+    public void diminuiRetorno() {
+        this.retorno--;
     }
 
     public void setExecucao(String execucao) {
@@ -62,14 +82,14 @@ public class Processo implements Serializable {
     @Override
     public String toString() {
         return String.format(
-                " %3d | %4s | %7s | %8s | %8s | %10s | %4s",
+                " %3d | %4s | %6dB | %8s | %8s | %10s | %4s",
                 pid, nome, tamanho, criacao, execucao, estado, host
         );
     }
 
     public String toLog() {
         return String.format(
-                " %3d | %4s | %7s | %8s | %8s | %4s",
+                " %3d | %4s | %6dB | %8s | %8s | %4s",
                 pid, nome, tamanho, criacao, execucao, host
         );
     }
