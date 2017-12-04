@@ -46,7 +46,7 @@
     </dependencies>
 
     <build>
-        <finalName>simuladorSO</finalName>
+        <finalName>simulador</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -58,7 +58,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>me.dliberalesso.Simulador</mainClass>
+                            <mainClass>me.dliberalesso.Server</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
